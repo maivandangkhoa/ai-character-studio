@@ -11,8 +11,9 @@ venv/
 *.token
 hf_token.txt
 
-# Heavy artifacts (live on Google Drive, not in git)
-models/
+# Heavy artifacts (live on Google Drive, not in git).
+# Leading slash = repo-root only, so it does NOT match the src/models/ package.
+/models/
 *.safetensors
 *.ckpt
 *.pt
@@ -28,5 +29,5 @@ outputs/generated/
 outputs/logs/
 
 # Caches
-cache/
+/cache/
 .cache/

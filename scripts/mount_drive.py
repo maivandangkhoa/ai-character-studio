@@ -5,6 +5,8 @@ Safe to run anywhere: outside Colab it just creates the local directory tree.
 
 from __future__ import annotations
 
+import os
+
 import _bootstrap  # noqa: F401  (sys.path side effect)
 
 from src.utils.env import Environment, detect_environment
@@ -13,16 +15,34 @@ from src.utils.paths import Paths
 
 logger = get_logger()
 
+_MOUNT_POINT = "/content/drive"
+
 
 def mount_drive() -> None:
-    """Mount Drive when on Colab; no-op elsewhere."""
-    if detect_environment() is Environment.COLAB:
+    """Ensure Drive is mounted on Colab; no-op elsewhere or if already mounted.
+
+    ``google.colab.drive.mount`` only works inside the notebook kernel, not in a
+    subprocess (``!python ...``). The notebook mounts Drive in its own cell, so
+    here we just verify and otherwise warn instead of crashing.
+    """
+    if detect_environment() is not Environment.COLAB:
+        logger.info("Not on Colab; skipping Drive mount.")
+        return
+    if os.path.isdir(f"{_MOUNT_POINT}/MyDrive"):
+        logger.info("Drive already mounted at %s.", _MOUNT_POINT)
+        return
+    try:
         from google.colab import drive  # type: ignore
 
-        logger.info("Mounting Google Drive at /content/drive ...")
-        drive.mount("/content/drive")
-    else:
-        logger.info("Not on Colab; skipping Drive mount.")
+        logger.info("Mounting Google Drive at %s ...", _MOUNT_POINT)
+        drive.mount(_MOUNT_POINT)
+    except Exception as exc:  # subprocess has no notebook kernel
+        logger.warning(
+            "Could not mount Drive from this process (%s). Mount it from a "
+            "notebook cell: `from google.colab import drive; "
+            "drive.mount('/content/drive')`, then re-run.",
+            exc,
+        )
 
 
 def main() -> None:
