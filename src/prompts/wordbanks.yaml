@@ -1,0 +1,73 @@
+# Word banks feeding the randomised prompt builder. Fully editable / config-driven.
+clothing:
+  - "casual streetwear"
+  - "elegant evening dress"
+  - "cozy oversized sweater"
+  - "business suit"
+  - "summer floral dress"
+  - "leather jacket and jeans"
+  - "traditional kimono"
+  - "athletic sportswear"
+
+weather:
+  - "clear sky"
+  - "light rain"
+  - "soft snowfall"
+  - "foggy morning"
+  - "overcast"
+  - "windy afternoon"
+
+country:
+  - "Tokyo, Japan"
+  - "Paris, France"
+  - "New York City, USA"
+  - "Santorini, Greece"
+  - "Seoul, South Korea"
+  - "Venice, Italy"
+  - "Reykjavik, Iceland"
+
+pose:
+  - "walking"
+  - "sitting at a cafe"
+  - "looking over the shoulder"
+  - "leaning against a wall"
+  - "standing confidently"
+  - "laughing candidly"
+
+camera:
+  - "Sony A7 IV"
+  - "Canon EOS R5"
+  - "Fujifilm X-T5"
+  - "Leica Q2"
+
+lens:
+  - "35mm"
+  - "50mm"
+  - "85mm"
+  - "24mm wide angle"
+
+emotion:
+  - "serene"
+  - "joyful"
+  - "thoughtful"
+  - "confident"
+  - "playful"
+
+time_of_day:
+  - "golden hour"
+  - "blue hour"
+  - "midday"
+  - "night with neon lights"
+  - "early sunrise"
+
+season:
+  - "spring blossoms"
+  - "summer heat"
+  - "autumn leaves"
+  - "winter snow"
+
+style:
+  - "cinematic, photorealistic"
+  - "editorial fashion photography"
+  - "documentary street photography"
+  - "soft film grain, analog look"

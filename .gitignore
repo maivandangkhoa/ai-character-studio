@@ -1,0 +1,32 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+.ipynb_checkpoints/
+
+# Secrets
+.env
+*.token
+hf_token.txt
+
+# Heavy artifacts (live on Google Drive, not in git)
+models/
+*.safetensors
+*.ckpt
+*.pt
+
+# Dataset raw/processed images
+datasets/*/raw/
+datasets/*/processed/
+datasets/*/captions/
+
+# Outputs
+outputs/lora/
+outputs/generated/
+outputs/logs/
+
+# Caches
+cache/
+.cache/

@@ -1,0 +1,22 @@
+# All paths are config-driven. No hardcoded paths anywhere in the codebase.
+# `drive_root` is resolved per environment; override via env var AICS_DRIVE_ROOT.
+
+# Default Google Drive mount location on Colab.
+drive_root: "/content/drive/MyDrive/AICharacter"
+
+# Local fallback when not running on Colab/RunPod (relative to project root).
+local_root: "."
+
+# Subdirectories created under the active root.
+subdirs:
+  datasets: "datasets"
+  models: "models"
+  loras: "outputs/lora"
+  generated: "outputs/generated"
+  logs: "outputs/logs"
+  cache: "cache"
+
+# Where sd-scripts (kohya FLUX trainer) is cloned/located.
+sd_scripts_dir: "third_party/sd-scripts"
+sd_scripts_repo: "https://github.com/kohya-ss/sd-scripts.git"
+sd_scripts_branch: "sd3"

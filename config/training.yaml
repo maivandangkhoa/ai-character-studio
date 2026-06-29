@@ -1,0 +1,40 @@
+# Training configuration. Everything configurable, no hardcoded values.
+# Per-character overrides may be supplied via --character; trigger_word defaults
+# to "<character>_ai" when left null.
+
+base_model: "black-forest-labs/FLUX.1-dev"
+trigger_word: null            # null -> "<character>_ai"
+
+# Core hyperparameters
+resolution: 1024
+steps: 4000
+train_batch_size: 1
+gradient_accumulation_steps: 1
+learning_rate: 1.0e-4
+network_dim: 32               # LoRA rank
+network_alpha: 16
+optimizer: "adamw8bit"
+lr_scheduler: "cosine"
+mixed_precision: "bf16"
+seed: 42
+
+# Checkpointing / resume
+save_every_n_steps: 500
+keep_last_n_checkpoints: 3
+resume: true                  # auto-resume from latest checkpoint if present
+
+# Memory (Colab T4/A100 friendly)
+low_vram: true                # enables fp8 base + blocks-to-swap when true
+fp8_base: true
+cache_latents: true
+cache_text_encoder_outputs: true
+
+# Captioning
+auto_caption: true            # use Florence-2 when captions are missing
+caption_model: "microsoft/Florence-2-large"
+
+# Required FLUX component repos (downloaded into models cache)
+flux:
+  clip_l: "comfyanonymous/flux_text_encoders"
+  t5xxl: "comfyanonymous/flux_text_encoders"
+  ae: "black-forest-labs/FLUX.1-dev"
