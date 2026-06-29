@@ -37,6 +37,11 @@ class KohyaRunner:
         sd_dir = self.paths.sd_scripts_dir
         if (sd_dir / "flux_train_network.py").exists():
             return
+        if sd_dir.exists():
+            # Leftover from an interrupted/partial clone (common on Drive sync).
+            # Remove it so the clone below starts from a clean directory.
+            logger.warning("Removing incomplete sd-scripts at %s ...", sd_dir)
+            shutil.rmtree(sd_dir, ignore_errors=True)
         sd_dir.parent.mkdir(parents=True, exist_ok=True)
         logger.info("Cloning sd-scripts (%s) ...", self.paths.sd_scripts_branch)
         subprocess.run(
