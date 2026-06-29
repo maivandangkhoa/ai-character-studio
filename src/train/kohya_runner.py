@@ -33,35 +33,46 @@ class KohyaRunner:
         self.lora_dir = paths.lora_dir(cfg.character)
 
     def ensure_sd_scripts(self) -> None:
-        """Clone sd-scripts (FLUX branch) and install its deps if not present."""
+        """Clone sd-scripts (FLUX branch) and install its deps.
+
+        Clone and dependency install are decoupled: a successful clone but a
+        failed/interrupted ``pip install`` (e.g. previous bad requirement line)
+        must still retry the install on the next run, hence the separate marker.
+        """
         sd_dir = self.paths.sd_scripts_dir
-        if (sd_dir / "flux_train_network.py").exists():
-            return
-        if sd_dir.exists():
-            # Leftover from an interrupted/partial clone (common on Drive sync).
-            # Remove it so the clone below starts from a clean directory.
-            logger.warning("Removing incomplete sd-scripts at %s ...", sd_dir)
-            shutil.rmtree(sd_dir, ignore_errors=True)
-        sd_dir.parent.mkdir(parents=True, exist_ok=True)
-        logger.info("Cloning sd-scripts (%s) ...", self.paths.sd_scripts_branch)
-        subprocess.run(
-            [
-                "git",
-                "clone",
-                "--branch",
-                self.paths.sd_scripts_branch,
-                "--depth",
-                "1",
-                self.paths.sd_scripts_repo,
-                str(sd_dir),
-            ],
-            check=True,
-        )
+        if not (sd_dir / "flux_train_network.py").exists():
+            if sd_dir.exists():
+                # Leftover from an interrupted/partial clone (common on Drive sync).
+                # Remove it so the clone below starts from a clean directory.
+                logger.warning("Removing incomplete sd-scripts at %s ...", sd_dir)
+                shutil.rmtree(sd_dir, ignore_errors=True)
+            sd_dir.parent.mkdir(parents=True, exist_ok=True)
+            logger.info("Cloning sd-scripts (%s) ...", self.paths.sd_scripts_branch)
+            subprocess.run(
+                [
+                    "git",
+                    "clone",
+                    "--branch",
+                    self.paths.sd_scripts_branch,
+                    "--depth",
+                    "1",
+                    self.paths.sd_scripts_repo,
+                    str(sd_dir),
+                ],
+                check=True,
+            )
         self._install_sd_scripts_deps(sd_dir)
 
     @staticmethod
     def _install_sd_scripts_deps(sd_dir) -> None:
-        """Install sd-scripts' own requirements (excluding its editable self-line)."""
+        """Install sd-scripts' own requirements (excluding its editable self-line).
+
+        A sentinel file marks success so we skip the (slow) reinstall on later
+        runs, but always retry while it is absent.
+        """
+        marker = sd_dir / ".aics_deps_installed"
+        if marker.exists():
+            return
         req = sd_dir / "requirements.txt"
         if not req.exists():
             return
@@ -76,6 +87,7 @@ class KohyaRunner:
             lines.append(s)
         if lines:
             subprocess.run([sys.executable, "-m", "pip", "install", "-q", *lines], check=True)
+        marker.write_text("ok", encoding="utf-8")
 
     def _sync_captions(self) -> int:
         """Copy captions next to processed images (sd-scripts reads sidecars)."""
