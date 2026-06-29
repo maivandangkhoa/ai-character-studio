@@ -7,6 +7,12 @@ drive_root: "/content/drive/MyDrive/AICharacter"
 # Local fallback when not running on Colab/RunPod (relative to project root).
 local_root: "."
 
+# Base model weights (~24-34GB) are large and re-downloadable, so by default
+# they are cached on ephemeral local disk (NOT Drive) to spare Drive quota.
+# On Colab/RunPod the models dir lives here; set to "" to keep them under the
+# main root (Drive), or override with the AICS_MODEL_CACHE env var.
+model_cache_root: "/content/models"
+
 # Subdirectories created under the active root.
 subdirs:
   datasets: "datasets"

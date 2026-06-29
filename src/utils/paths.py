@@ -16,6 +16,7 @@ from src.utils.config import load_config, project_root
 from src.utils.env import Environment, detect_environment
 
 DRIVE_ROOT_ENV = "AICS_DRIVE_ROOT"
+MODEL_CACHE_ENV = "AICS_MODEL_CACHE"
 
 
 @dataclass(frozen=True)
@@ -59,7 +60,7 @@ class Paths:
         return cls(
             root=root,
             datasets=root / subs["datasets"],
-            models=root / subs["models"],
+            models=cls._resolve_models(cfg, root, env),
             loras=root / subs["loras"],
             generated=root / subs["generated"],
             logs=root / subs["logs"],
@@ -79,6 +80,23 @@ class Paths:
         local = cfg.get("local_root", ".")
         base = project_root() if local == "." else Path(local)
         return base
+
+    @staticmethod
+    def _resolve_models(cfg: dict[str, Any], root: Path, env: Environment) -> Path:
+        """Resolve the base-model cache.
+
+        Base weights are large (~24-34GB) and re-downloadable, so by default they
+        live on ephemeral local storage (off Drive) to spare Drive quota. Set
+        ``model_cache_root: ""`` in paths.yaml to keep them under the main root,
+        or override with the ``AICS_MODEL_CACHE`` env var.
+        """
+        override = os.environ.get(MODEL_CACHE_ENV)
+        if override:
+            return Path(override)
+        cache_root = cfg.get("model_cache_root") or ""
+        if cache_root and env in (Environment.COLAB, Environment.RUNPOD):
+            return Path(cache_root)
+        return root / cfg["subdirs"]["models"]
 
     def ensure(self) -> "Paths":
         """Create all top-level directories if missing."""
