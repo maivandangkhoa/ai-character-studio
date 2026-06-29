@@ -18,6 +18,20 @@ logger = get_logger()
 
 _CAPTION_TASK = "<DETAILED_CAPTION>"
 
+# transformers>=4.50 dropped these legacy generation attributes from
+# PretrainedConfig (they live on GenerationConfig now), but Florence-2's remote
+# configuration_florence2.py still reads ``self.forced_bos_token_id`` inside
+# ``__init__``. Restore the legacy class-level defaults so the model loads.
+_LEGACY_CONFIG_DEFAULTS = ("forced_bos_token_id", "forced_eos_token_id")
+
+
+def _patch_florence2_config_compat() -> None:
+    from transformers import PretrainedConfig
+
+    for attr in _LEGACY_CONFIG_DEFAULTS:
+        if not hasattr(PretrainedConfig, attr):
+            setattr(PretrainedConfig, attr, None)
+
 
 class Florence2Captioner:
     """Lazy wrapper around the Florence-2 image-captioning model."""
@@ -34,6 +48,7 @@ class Florence2Captioner:
         import torch
         from transformers import AutoModelForCausalLM, AutoProcessor
 
+        _patch_florence2_config_compat()
         self._device = self._device or ("cuda" if torch.cuda.is_available() else "cpu")
         dtype = torch.float16 if self._device == "cuda" else torch.float32
         logger.info("Loading Florence-2 (%s) on %s ...", self.model_id, self._device)
