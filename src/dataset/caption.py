@@ -27,6 +27,7 @@ class Florence2Captioner:
         self._device = device
         self._model: Any = None
         self._processor: Any = None
+        self._dtype: Any = None
 
     def _ensure_loaded(self) -> None:
         if self._model is not None:
@@ -35,10 +36,10 @@ class Florence2Captioner:
         from transformers import AutoModelForCausalLM, AutoProcessor
 
         self._device = self._device or ("cuda" if torch.cuda.is_available() else "cpu")
-        dtype = torch.float16 if self._device == "cuda" else torch.float32
+        self._dtype = torch.float16 if self._device == "cuda" else torch.float32
         logger.info("Loading Florence-2 (%s) on %s ...", self.model_id, self._device)
         self._model = AutoModelForCausalLM.from_pretrained(
-            self.model_id, torch_dtype=dtype, trust_remote_code=True
+            self.model_id, torch_dtype=self._dtype, trust_remote_code=True
         ).to(self._device)
         self._processor = AutoProcessor.from_pretrained(self.model_id, trust_remote_code=True)
 
@@ -48,8 +49,10 @@ class Florence2Captioner:
 
         with Image.open(image_path) as raw:
             image = raw.convert("RGB")
+        # BatchFeature.to casts only floating tensors (pixel_values) to the model
+        # dtype, leaving integer input_ids untouched — required for fp16 on CUDA.
         inputs = self._processor(text=_CAPTION_TASK, images=image, return_tensors="pt").to(
-            self._device
+            self._device, self._dtype
         )
         generated = self._model.generate(
             input_ids=inputs["input_ids"],
