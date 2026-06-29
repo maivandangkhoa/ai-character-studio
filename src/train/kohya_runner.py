@@ -66,11 +66,14 @@ class KohyaRunner:
         if not req.exists():
             return
         logger.info("Installing sd-scripts requirements ...")
-        lines = [
-            ln.strip()
-            for ln in req.read_text(encoding="utf-8").splitlines()
-            if ln.strip() and not ln.strip().startswith("#") and ln.strip() != "."
-        ]
+        lines = []
+        for ln in req.read_text(encoding="utf-8").splitlines():
+            s = ln.strip()
+            # Skip blanks, comments, and the editable self-install ("-e ." / ".").
+            # sd-scripts is run by path, so its package resolves without installing.
+            if not s or s.startswith("#") or s == "." or s.startswith("-e"):
+                continue
+            lines.append(s)
         if lines:
             subprocess.run([sys.executable, "-m", "pip", "install", "-q", *lines], check=True)
 
