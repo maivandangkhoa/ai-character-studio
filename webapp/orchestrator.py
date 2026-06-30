@@ -69,12 +69,40 @@ def _build_push_dir(dest: Path, prompts: list[str], seed: int | None, character:
     (dest / "generate_kernel.py").write_text(patched, encoding="utf-8")
 
 
+def _force_t4_accelerator() -> None:
+    """Make `kernels_push` request a T4 instead of Kaggle's default P100.
+
+    Kaggle's PyTorch build dropped Pascal (sm_60), so a P100 session can't run
+    CUDA at all. `kaggle kernels push` has no metadata knob for the accelerator
+    type (it only sets ``enable_gpu``), so we set ``machine_shape`` on the SDK
+    request directly. Patched once, in-process (hence the API push below instead
+    of the CLI subprocess).
+    """
+    from kagglesdk.kernels.services.kernels_api_service import KernelsApiClient
+
+    if getattr(KernelsApiClient, "_force_t4", False):
+        return
+    _orig = KernelsApiClient.save_kernel
+
+    def _save(self, request=None):  # noqa: ANN001
+        if request is not None and getattr(request, "enable_gpu", False):
+            request.machine_shape = "NvidiaTeslaT4"
+        return _orig(self, request)
+
+    KernelsApiClient.save_kernel = _save
+    KernelsApiClient._force_t4 = True
+
+
 def push(prompts: list[str], seed: int | None, character: str, work_dir: Path) -> None:
-    """Inject prompts and trigger a kernel run."""
+    """Inject prompts and trigger a kernel run on a T4 (not the default P100)."""
     _build_push_dir(work_dir, prompts, seed, character)
-    res = _run(["kaggle", "kernels", "push", "-p", str(work_dir)])
-    if res.returncode != 0:
-        raise KaggleError(f"kernels push failed: {res.stderr or res.stdout}")
+    import kaggle
+
+    _force_t4_accelerator()
+    resp = kaggle.api.kernels_push(str(work_dir))
+    err = getattr(resp, "error", None)
+    if err:
+        raise KaggleError(f"kernels push failed: {err}")
 
 
 def poll(timeout_s: int = 3600, interval_s: int = 30) -> str:
