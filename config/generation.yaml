@@ -3,9 +3,11 @@
 base_model: "black-forest-labs/FLUX.1-dev"
 
 # Sampling
-width: 1024
-height: 1024
-num_inference_steps: 28
+# 768/20 ~3x faster per image than 1024/28 on a T4 (~6-7 min vs ~20), with only
+# a small quality drop. Raise back to 1024/28 on a faster GPU or for finals.
+width: 768
+height: 768
+num_inference_steps: 20
 guidance_scale: 3.5
 seed: null                    # null -> random per image
 
