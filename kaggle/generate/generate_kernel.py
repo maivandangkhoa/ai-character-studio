@@ -36,7 +36,13 @@ except Exception as exc:  # noqa: BLE001
 if not os.path.isdir(REPO_DIR):
     subprocess.run(["git", "clone", "--depth", "1", REPO_URL, REPO_DIR], check=True)
 os.chdir(REPO_DIR)
-subprocess.run([sys.executable, "-m", "pip", "install", "-q", "-r", "requirements.txt"], check=True)
+# Generation-only deps: newer diffusers/transformers that load a LoRA into a
+# 4-bit NF4 FLUX transformer. requirements.txt's <4.50 transformers pin (for
+# Florence-2 captioning, unused here) would pull an old, crashing diffusers.
+subprocess.run(
+    [sys.executable, "-m", "pip", "install", "-q", "-r", "requirements-generate.txt"],
+    check=True,
+)
 
 with open("prompts.txt", "w", encoding="utf-8") as fh:
     fh.write("\n".join(PROMPTS))

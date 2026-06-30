@@ -1,0 +1,22 @@
+# Generation-only dependencies.
+#
+# Unlike training, image generation never imports Florence-2, so it is NOT bound
+# by the transformers<4.50 pin in requirements.txt. That pin drags in an old
+# diffusers (~late-2024) that crashes when loading a LoRA into a 4-bit (NF4)
+# quantized FLUX transformer ("Only Tensors of floating point ... require
+# gradients"). Generation needs the newer diffusers/transformers that handle it.
+torch>=2.3.0
+torchvision>=0.18.0
+diffusers>=0.33.0
+transformers>=4.50.0
+peft>=0.14.0
+accelerate>=1.0.0
+bitsandbytes>=0.43.0
+safetensors>=0.4.3
+sentencepiece>=0.2.0
+protobuf>=4.25.0
+Pillow>=10.3.0
+numpy>=1.26.0
+PyYAML>=6.0.1
+tqdm>=4.66.0
+huggingface_hub>=0.24.0
