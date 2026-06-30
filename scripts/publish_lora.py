@@ -43,10 +43,12 @@ def main() -> None:
 
     # Stage the single file alongside the metadata for the upload.
     shutil.copyfile(lora, _META_DIR / "lora.safetensors")
+    # Upload the raw file (default dir-mode), NOT a zip: a zip-mode dataset mounts
+    # as /kaggle/input/<slug>/<slug>.zip, so the kernel never finds lora.safetensors.
     if _exists(dataset_id):
-        cmd = ["kaggle", "datasets", "version", "-p", str(_META_DIR), "-m", args.message, "--dir-mode", "zip"]
+        cmd = ["kaggle", "datasets", "version", "-p", str(_META_DIR), "-m", args.message]
     else:
-        cmd = ["kaggle", "datasets", "create", "-p", str(_META_DIR), "--dir-mode", "zip"]
+        cmd = ["kaggle", "datasets", "create", "-p", str(_META_DIR)]
     print("Running:", " ".join(cmd))
     subprocess.run(cmd, check=True)
     print(f"Published {lora.name} -> {dataset_id}")
