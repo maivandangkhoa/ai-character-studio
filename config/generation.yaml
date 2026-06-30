@@ -12,6 +12,11 @@ seed: null                    # null -> random per image
 # LoRA
 lora_weight: 0.9
 
+# Memory: load the FLUX transformer in 4-bit NF4 (~6GB) instead of bf16 (~24GB).
+# Required on a 16GB T4 / Kaggle's ~29GB RAM; turn off on a >=24GB-VRAM GPU for
+# slightly higher fidelity. Override via AICS_LOW_VRAM.
+low_vram: true
+
 # Batch behaviour
 count: 10                     # default images per run
 skip_existing: true           # resume-safe: never overwrite / duplicate

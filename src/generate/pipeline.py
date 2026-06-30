@@ -35,6 +35,7 @@ class FluxGenerator:
         self.lora_path = lora_path
         self.output_dir = output_dir
         self._pipe: Any = None
+        self._lora_scale: float | None = None
 
     def _load(self) -> None:
         if self._pipe is not None:
@@ -43,15 +44,46 @@ class FluxGenerator:
         from diffusers import FluxPipeline
 
         dtype = torch.bfloat16
+        cuda = torch.cuda.is_available()
+        quantize = self.cfg.low_vram and cuda
         logger.info("Loading FLUX pipeline %s ...", self.cfg.base_model)
-        pipe = FluxPipeline.from_pretrained(self.cfg.base_model, torch_dtype=dtype)
-        if torch.cuda.is_available():
+
+        if quantize:
+            # bf16 FLUX (~24GB transformer) busts both Kaggle's ~29GB RAM and a
+            # 16GB T4's VRAM under cpu-offload. Load the transformer in 4-bit NF4
+            # (~6GB) so it fits — same fp8-for-training rationale, generation side.
+            from diffusers import BitsAndBytesConfig, FluxTransformer2DModel
+
+            logger.info("Quantizing transformer to 4-bit (NF4) for low-VRAM hosts.")
+            transformer = FluxTransformer2DModel.from_pretrained(
+                self.cfg.base_model,
+                subfolder="transformer",
+                quantization_config=BitsAndBytesConfig(
+                    load_in_4bit=True,
+                    bnb_4bit_quant_type="nf4",
+                    bnb_4bit_compute_dtype=dtype,
+                ),
+                torch_dtype=dtype,
+            )
+            pipe = FluxPipeline.from_pretrained(
+                self.cfg.base_model, transformer=transformer, torch_dtype=dtype
+            )
+        else:
+            pipe = FluxPipeline.from_pretrained(self.cfg.base_model, torch_dtype=dtype)
+
+        if cuda:
             pipe.enable_model_cpu_offload()
         else:
             pipe = pipe.to("cpu")
+
         logger.info("Attaching LoRA %s (weight=%.2f)", self.lora_path.name, self.cfg.lora_weight)
         pipe.load_lora_weights(str(self.lora_path))
-        pipe.fuse_lora(lora_scale=self.cfg.lora_weight)
+        if quantize:
+            # fuse_lora can't write into 4-bit weights; apply the scale per call.
+            self._lora_scale = self.cfg.lora_weight
+        else:
+            pipe.fuse_lora(lora_scale=self.cfg.lora_weight)
+            self._lora_scale = None
         self._pipe = pipe
 
     def _seed_generator(self, seed: int) -> Any:
@@ -72,6 +104,10 @@ class FluxGenerator:
         self.output_dir.mkdir(parents=True, exist_ok=True)
         prompt = payload["prompt"]
         seed = self._resolve_seed(index)
+        call_kwargs: dict[str, Any] = {}
+        if self._lora_scale is not None:
+            # LoRA wasn't fused (4-bit base): apply its weight at inference time.
+            call_kwargs["joint_attention_kwargs"] = {"scale": self._lora_scale}
         image = self._pipe(
             prompt=prompt,
             width=self.cfg.width,
@@ -79,6 +115,7 @@ class FluxGenerator:
             num_inference_steps=self.cfg.num_inference_steps,
             guidance_scale=self.cfg.guidance_scale,
             generator=self._seed_generator(seed),
+            **call_kwargs,
         ).images[0]
 
         out_path = self.output_dir / output_name(

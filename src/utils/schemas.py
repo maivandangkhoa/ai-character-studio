@@ -91,6 +91,7 @@ class GenerationConfig:
     output_format: str
     save_metadata: bool
     negative_prompt: str
+    low_vram: bool
 
     @classmethod
     def load(cls, overrides: dict[str, Any] | None = None) -> "GenerationConfig":
@@ -111,4 +112,5 @@ class GenerationConfig:
             output_format=str(cfg["output_format"]),
             save_metadata=bool(cfg["save_metadata"]),
             negative_prompt=str(cfg["negative_prompt"]),
+            low_vram=bool(cfg.get("low_vram", True)),
         )
