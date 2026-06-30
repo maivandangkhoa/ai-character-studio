@@ -7,6 +7,7 @@ be installed and authenticated (``~/.kaggle/kaggle.json``) on the VM.
 
 from __future__ import annotations
 
+import os
 import re
 import shutil
 import subprocess
@@ -30,12 +31,31 @@ def _run(cmd: list[str]) -> subprocess.CompletedProcess[str]:
     return subprocess.run(cmd, capture_output=True, text=True)
 
 
+def _hf_token() -> str:
+    """HF token for the gated FLUX download: environment first, then repo .env.
+
+    Injected into the pushed (private) kernel so generation does not depend on a
+    Kaggle Secret being attached to the kernel.
+    """
+    tok = os.environ.get("HUGGING_FACE_KEY") or os.environ.get("HF_TOKEN")
+    if tok:
+        return tok.strip()
+    env_file = _REPO_ROOT / ".env"
+    if env_file.exists():
+        for line in env_file.read_text(encoding="utf-8").splitlines():
+            line = line.strip()
+            if line.startswith(("HUGGING_FACE_KEY=", "HF_TOKEN=")):
+                return line.split("=", 1)[1].strip().strip("\"'")
+    return ""
+
+
 def _inject(prompts: list[str], seed: int | None, character: str) -> str:
     lines = ",\n    ".join(repr(p) for p in prompts)
     return (
         "# === INJECTED BY ORCHESTRATOR (do not edit by hand) ===\n"
         f"CHARACTER = {character!r}\n"
         f"SEED = {seed!r}\n"
+        f"HF_TOKEN = {_hf_token()!r}\n"
         f"PROMPTS = [\n    {lines},\n]\n"
         "# === END INJECTED ==="
     )

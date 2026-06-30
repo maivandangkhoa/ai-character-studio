@@ -15,6 +15,7 @@ import sys
 # === INJECTED BY ORCHESTRATOR (do not edit by hand) ===
 CHARACTER = "mayalin"
 SEED = None
+HF_TOKEN = ""
 PROMPTS = [
     "portrait, soft studio lighting, looking at camera",
 ]
@@ -25,13 +26,18 @@ REPO_DIR = "/kaggle/temp/repo"  # ephemeral: keep it out of the kernel output
 LORA = "/kaggle/input/mayalin-lora/lora.safetensors"
 IMAGES_OUT = "/kaggle/working/images"
 
-# FLUX.1-dev is gated — HF token comes from Kaggle Secrets (Add-ons -> Secrets).
-try:
-    from kaggle_secrets import UserSecretsClient
+# FLUX.1-dev is gated. Prefer the token injected by the orchestrator (from the
+# VM's .env); fall back to a Kaggle Secret named HF_TOKEN if none was injected.
+if HF_TOKEN:
+    os.environ["HF_TOKEN"] = HF_TOKEN
+    print("HF_TOKEN loaded from injected value.")
+else:
+    try:
+        from kaggle_secrets import UserSecretsClient
 
-    os.environ["HF_TOKEN"] = UserSecretsClient().get_secret("HF_TOKEN")
-except Exception as exc:  # noqa: BLE001
-    print("WARN: could not read HF_TOKEN secret:", exc)
+        os.environ["HF_TOKEN"] = UserSecretsClient().get_secret("HF_TOKEN")
+    except Exception as exc:  # noqa: BLE001
+        print("WARN: could not read HF_TOKEN secret:", exc)
 
 if not os.path.isdir(REPO_DIR):
     subprocess.run(["git", "clone", "--depth", "1", REPO_URL, REPO_DIR], check=True)
