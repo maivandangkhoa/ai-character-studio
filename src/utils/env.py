@@ -14,8 +14,14 @@ from enum import Enum
 
 class Environment(str, Enum):
     COLAB = "colab"
+    KAGGLE = "kaggle"
     RUNPOD = "runpod"
     LOCAL = "local"
+
+
+def is_kaggle() -> bool:
+    """True when running inside a Kaggle notebook kernel."""
+    return bool(os.environ.get("KAGGLE_KERNEL_RUN_TYPE")) or os.path.isdir("/kaggle")
 
 
 def is_colab() -> bool:
@@ -35,6 +41,8 @@ def is_runpod() -> bool:
 
 def detect_environment() -> Environment:
     """Detect the active execution environment."""
+    if is_kaggle():
+        return Environment.KAGGLE
     if is_colab():
         return Environment.COLAB
     if is_runpod():

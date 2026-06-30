@@ -4,7 +4,10 @@
 # Default Google Drive mount location on Colab.
 drive_root: "/content/drive/MyDrive/AICharacter"
 
-# Local fallback when not running on Colab/RunPod (relative to project root).
+# Persistent working dir on Kaggle (no Drive). Outputs/datasets live here.
+kaggle_root: "/kaggle/working/AICharacter"
+
+# Local fallback when not running on Colab/RunPod/Kaggle (relative to project root).
 local_root: "."
 
 # Base model weights (~24-34GB) are large and re-downloadable, so by default
@@ -12,6 +15,10 @@ local_root: "."
 # On Colab/RunPod the models dir lives here; set to "" to keep them under the
 # main root (Drive), or override with the AICS_MODEL_CACHE env var.
 model_cache_root: "/content/models"
+
+# On Kaggle, cache the big base weights on ephemeral scratch (not the 20GB
+# persisted /kaggle/working output). Override with AICS_MODEL_CACHE if needed.
+kaggle_model_cache: "/kaggle/temp/models"
 
 # Subdirectories created under the active root.
 subdirs:

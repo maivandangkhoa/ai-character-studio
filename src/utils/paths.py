@@ -75,6 +75,8 @@ class Paths:
         override = os.environ.get(DRIVE_ROOT_ENV)
         if override:
             return Path(override)
+        if env == Environment.KAGGLE:
+            return Path(cfg["kaggle_root"])
         if env in (Environment.COLAB, Environment.RUNPOD):
             return Path(cfg["drive_root"])
         local = cfg.get("local_root", ".")
@@ -93,6 +95,10 @@ class Paths:
         override = os.environ.get(MODEL_CACHE_ENV)
         if override:
             return Path(override)
+        if env == Environment.KAGGLE:
+            kaggle_cache = cfg.get("kaggle_model_cache") or ""
+            if kaggle_cache:
+                return Path(kaggle_cache)
         cache_root = cfg.get("model_cache_root") or ""
         if cache_root and env in (Environment.COLAB, Environment.RUNPOD):
             return Path(cache_root)
