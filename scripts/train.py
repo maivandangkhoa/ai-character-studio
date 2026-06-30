@@ -69,6 +69,12 @@ def main() -> None:
         assets = ensure_flux_assets(paths)
 
     image_count = len(load_dataset(cp, source="processed"))
+    if image_count == 0:
+        raise RuntimeError(
+            f"No processed images for '{cfg.character}'. Put training images in "
+            f"{cp.raw} (on Kaggle, check RAW_IMAGES_DIR and run the staging cell) "
+            "before training."
+        )
     with StageTimer("train", log_dir, character=cfg.character, image_count=image_count) as t:
         runner = KohyaRunner(paths, cfg, assets)
         code = runner.run()
