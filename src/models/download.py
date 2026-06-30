@@ -17,10 +17,22 @@ from src.utils.paths import Paths
 logger = get_logger()
 
 # Single-file weights used by sd-scripts' FLUX trainer.
-_FLUX_TRANSFORMER = ("black-forest-labs/FLUX.1-dev", "flux1-dev.safetensors")
+# Transformer defaults to the pre-quantized fp8 checkpoint (~12GB): the bf16
+# original (~24GB) plus sd-scripts' in-RAM bf16->fp8 cast peaks past the ~29GB
+# Kaggle RAM and OOMs. With an fp8 checkpoint sd-scripts skips the cast. Override
+# with AICS_FLUX_TRANSFORMER="repo::file" to use bf16 on high-RAM machines.
+_FLUX_TRANSFORMER = ("Kijai/flux-fp8", "flux1-dev-fp8.safetensors")
 _FLUX_AE = ("black-forest-labs/FLUX.1-dev", "ae.safetensors")
 _CLIP_L = ("comfyanonymous/flux_text_encoders", "clip_l.safetensors")
 _T5XXL = ("comfyanonymous/flux_text_encoders", "t5xxl_fp16.safetensors")
+
+
+def _flux_transformer() -> tuple[str, str]:
+    override = os.environ.get("AICS_FLUX_TRANSFORMER")
+    if override and "::" in override:
+        repo, _, filename = override.partition("::")
+        return repo, filename
+    return _FLUX_TRANSFORMER
 
 
 @dataclass(frozen=True)
@@ -62,7 +74,7 @@ def _download(repo: str, filename: str, dest_dir: Path) -> Path:
 def ensure_flux_assets(paths: Paths) -> FluxAssets:
     """Ensure all FLUX weights are present locally, downloading if needed."""
     models = paths.models
-    transformer = _download(*_FLUX_TRANSFORMER, models)
+    transformer = _download(*_flux_transformer(), models)
     ae = _download(*_FLUX_AE, models)
     clip_l = _download(*_CLIP_L, models)
     t5xxl = _download(*_T5XXL, models)
