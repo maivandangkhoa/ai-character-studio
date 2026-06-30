@@ -1,3 +1,4 @@
+
 """Kaggle script kernel: resume-train the mayalin LoRA headlessly.
 
 Pushed via the Kaggle API (mirrors notebooks/train_lora_kaggle.ipynb), plus a
@@ -39,6 +40,9 @@ if not os.path.isdir(REPO_DIR):
 os.chdir(REPO_DIR)
 subprocess.run([sys.executable, "scripts/setup.py"], check=True)
 
+# A script kernel runs as /kaggle/src/script.py, so the repo dir isn't on the
+# import path the way it is in a notebook — add it before importing `src`.
+sys.path.insert(0, REPO_DIR)
 from src.utils.paths import Paths  # noqa: E402
 
 paths = Paths.load().ensure()
