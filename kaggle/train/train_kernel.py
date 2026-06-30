@@ -14,6 +14,10 @@ import shutil
 import subprocess
 import sys
 
+# Reduce CUDA fragmentation — training OOMs on a 16GB T4 by a hair otherwise.
+# Set before torch loads anywhere downstream (propagates to the trainer subprocess).
+os.environ.setdefault("PYTORCH_CUDA_ALLOC_CONF", "expandable_segments:True")
+
 # === INJECTED BY ORCHESTRATOR (do not edit by hand) ===
 CHARACTER = "mayalin"
 STEPS = 500

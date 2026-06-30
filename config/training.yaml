@@ -28,10 +28,11 @@ resume: true                  # auto-resume from latest checkpoint if present
 # Memory (Colab T4/A100 friendly)
 low_vram: true                # enables fp8 base + blocks-to-swap when true
 fp8_base: true
-blocks_to_swap: 8             # transformer blocks offloaded to CPU RAM each step.
-                              # At 512 a T4 has VRAM headroom, so 8 (not 16) fits
-                              # and roughly halves the CPU<->GPU swap time. Raise
-                              # if VRAM-OOM, lower for speed on bigger GPUs.
+blocks_to_swap: 16            # transformer blocks offloaded to CPU RAM each step.
+                              # 8 OOMs on a 16GB T4 at 512 (peak overshoots by a
+                              # hair, esp. when resuming via --network_weights);
+                              # 16 is the validated value that fits. Lower only on
+                              # a bigger GPU for speed.
 cache_latents: true
 cache_text_encoder_outputs: true
 
