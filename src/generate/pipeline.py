@@ -77,7 +77,17 @@ class FluxGenerator:
             pipe = pipe.to("cpu")
 
         logger.info("Attaching LoRA %s (weight=%.2f)", self.lora_path.name, self.cfg.lora_weight)
-        pipe.load_lora_weights(str(self.lora_path))
+        # sd-scripts FLUX LoRAs are transformer-only. Drop any text-encoder keys
+        # before loading: diffusers' TE path trips on the empty/CLIP-named rank
+        # dict (list index out of range). lora_state_dict handles kohya->diffusers
+        # key conversion; we keep only the transformer adapter.
+        state_dict = pipe.lora_state_dict(str(self.lora_path))
+        if isinstance(state_dict, tuple):
+            state_dict = state_dict[0]
+        state_dict = {
+            k: v for k, v in state_dict.items() if not k.startswith("text_encoder")
+        }
+        pipe.load_lora_weights(state_dict)
         if quantize:
             # fuse_lora can't write into 4-bit weights; apply the scale per call.
             self._lora_scale = self.cfg.lora_weight
