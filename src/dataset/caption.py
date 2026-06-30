@@ -66,6 +66,21 @@ class Florence2Captioner:
         )
         return str(parsed.get(_CAPTION_TASK, "")).strip()
 
+    def unload(self) -> None:
+        """Free the model from (GPU) memory. Training runs in the same process,
+        so a lingering Florence-2 (~4-5GB on CUDA) steals VRAM and OOMs the T4."""
+        if self._model is None:
+            return
+        import gc
+
+        import torch
+
+        self._model = None
+        self._processor = None
+        gc.collect()
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
+
 
 def _write_caption(item: DatasetItem, trigger_word: str, body: str) -> None:
     item.caption.parent.mkdir(parents=True, exist_ok=True)
@@ -87,9 +102,13 @@ def caption_character(
         logger.info("All %d images for '%s' already captioned.", len(items), cp.name)
         return 0
     captioner = Florence2Captioner(model_id)
-    for item in todo:
-        body = captioner.caption(item.image)
-        _write_caption(item, trigger_word, body)
-        logger.info("Captioned %s", item.image.name)
+    try:
+        for item in todo:
+            body = captioner.caption(item.image)
+            _write_caption(item, trigger_word, body)
+            logger.info("Captioned %s", item.image.name)
+    finally:
+        # Always release Florence-2's VRAM before the trainer launches.
+        captioner.unload()
     logger.info("Captioned %d images for '%s'.", len(todo), cp.name)
     return len(todo)
