@@ -114,6 +114,12 @@ class KohyaRunner:
             sys.executable,
             "-m",
             "accelerate.commands.launch",
+            # Pin to a single GPU: multi-GPU (e.g. Kaggle 2xT4) launches one
+            # process per GPU, each loading the full FLUX model + block-swap
+            # blocks into CPU RAM, which doubles RAM use and OOMs. A small LoRA
+            # gains nothing from data-parallel training.
+            "--num_processes",
+            "1",
             "--num_cpu_threads_per_process",
             "2",
             str(script),
