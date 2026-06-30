@@ -54,7 +54,17 @@ with open("prompts.txt", "w", encoding="utf-8") as fh:
     fh.write("\n".join(PROMPTS))
 
 if not os.path.exists(LORA):
-    raise SystemExit(f"LoRA not found at {LORA}. Attach the mayalin-lora dataset.")
+    # Kaggle may mount the dataset under a different folder name than the slug.
+    # Discover the LoRA anywhere under /kaggle/input instead of hardcoding it.
+    matches = glob.glob("/kaggle/input/**/*.safetensors", recursive=True)
+    if matches:
+        LORA = matches[0]
+        print("Discovered LoRA at:", LORA)
+    else:
+        print("No .safetensors under /kaggle/input. Tree:")
+        for p in sorted(glob.glob("/kaggle/input/**/*", recursive=True)):
+            print("  ", p)
+        raise SystemExit("LoRA not found. Is the mayalin-lora dataset attached?")
 
 cmd = [
     sys.executable,
