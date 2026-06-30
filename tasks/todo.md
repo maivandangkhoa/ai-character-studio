@@ -66,6 +66,19 @@
 - kohya FLUX branch + Colab VRAM (T4/A100) → may need fp8/low-VRAM flags; validate on target GPU tier.
 - Florence-2 download size vs Colab disk → cache to Drive.
 
+## Phase 9 — Web UI + Kaggle-backed generation (2026-06-30)
+Goal: a web UI on the VM where the user types prompts and gets images. Training
+runs once on Kaggle → LoRA pulled to VM. Generation runs on Kaggle batch
+(user chose free/slow), driven by the VM via the Kaggle API.
+- [x] `src/prompts/builder.py` — `prompts_to_payloads()` for user-supplied prompts
+- [x] `scripts/generate.py` — `--prompts-file` (custom prompts, trigger auto-prepended)
+- [x] `kaggle/generate/generate_kernel.py` — script kernel: clone repo, load LoRA from dataset, run generate
+- [x] `kaggle/generate/kernel-metadata.json` — kernel id `maivandangkhoa/mayalin-generate`, GPU+internet, lora dataset
+- [x] `scripts/publish_lora.py` — push pulled LoRA to Kaggle Dataset `maivandangkhoa/mayalin-lora`
+- [x] `webapp/` — FastAPI: submit prompts → background job (push kernel → poll → pull images) → gallery
+- [x] `webapp/README.md` — VM setup (kaggle token, run uvicorn)
+- Risks: generation on T4 not verified (FLUX diffusers ~24GB, same OOM risk as training — may need fp8); 20-40 min cold-start per batch; Kaggle 30h/week quota.
+
 ## Review (completed 2026-06-29)
 All 9 phases implemented in one pass. Every checkbox above is done.
 

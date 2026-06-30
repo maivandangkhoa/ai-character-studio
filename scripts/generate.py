@@ -15,7 +15,7 @@ from pathlib import Path
 import _bootstrap  # noqa: F401
 
 from src.generate.pipeline import FluxGenerator
-from src.prompts.builder import PromptBuilder
+from src.prompts.builder import PromptBuilder, prompts_to_payloads
 from src.utils.logging import StageTimer, get_logger
 from src.utils.paths import Paths
 from src.utils.schemas import GenerationConfig, TrainingConfig
@@ -29,6 +29,12 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--count", type=int, default=None, help="Target number of images.")
     p.add_argument("--seed", type=int, default=None, help="Base seed for reproducibility.")
     p.add_argument("--lora", default=None, help="Explicit LoRA path (defaults to exported one).")
+    p.add_argument(
+        "--prompts-file",
+        default=None,
+        help="Text file, one prompt per line. Overrides random prompts; the "
+        "trigger word is prepended to each line.",
+    )
     return p.parse_args()
 
 
@@ -50,16 +56,25 @@ def main() -> None:
         raise FileNotFoundError(f"LoRA not found: {lora_path}. Train the character first.")
 
     output_dir = paths.generated_dir(args.character)
-    target = cfg.count
-    already = _existing_images(output_dir, cfg.output_format) if cfg.skip_existing else 0
-    remaining = max(0, target - already)
-    if remaining == 0:
-        logger.info("Already have %d/%d images for '%s'. Nothing to do.", already, target, args.character)
-        return
-
-    builder = PromptBuilder(train_cfg.trigger_word, cfg.negative_prompt, seed=args.seed)
-    payloads = builder.to_payloads(remaining)
     log_dir = paths.logs / args.character
+    already = 0
+
+    if args.prompts_file:
+        lines = Path(args.prompts_file).read_text(encoding="utf-8").splitlines()
+        payloads = prompts_to_payloads(train_cfg.trigger_word, lines, cfg.negative_prompt)
+        if not payloads:
+            logger.info("No prompts found in %s. Nothing to do.", args.prompts_file)
+            return
+        logger.info("Generating %d image(s) from custom prompts.", len(payloads))
+    else:
+        target = cfg.count
+        already = _existing_images(output_dir, cfg.output_format) if cfg.skip_existing else 0
+        remaining = max(0, target - already)
+        if remaining == 0:
+            logger.info("Already have %d/%d images for '%s'. Nothing to do.", already, target, args.character)
+            return
+        builder = PromptBuilder(train_cfg.trigger_word, cfg.negative_prompt, seed=args.seed)
+        payloads = builder.to_payloads(remaining)
 
     with StageTimer("generate", log_dir, character=args.character) as t:
         generator = FluxGenerator(cfg, lora_path, output_dir)

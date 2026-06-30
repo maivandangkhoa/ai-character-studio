@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Mayalin Studio</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 880px; margin: 2rem auto; padding: 0 1rem; color: #1a1a1a; }
+    h1 { font-size: 1.4rem; }
+    textarea { width: 100%; min-height: 120px; font-size: 1rem; padding: .6rem; box-sizing: border-box; }
+    .row { display: flex; gap: .8rem; align-items: center; margin: .6rem 0; }
+    input[type=text] { padding: .5rem; }
+    button { background: #2563eb; color: #fff; border: 0; padding: .6rem 1.2rem; border-radius: 6px; font-size: 1rem; cursor: pointer; }
+    .job { border: 1px solid #e5e7eb; border-radius: 8px; padding: .8rem; margin: 1rem 0; }
+    .status { font-size: .85rem; padding: .15rem .5rem; border-radius: 999px; color: #fff; }
+    .queued, .running { background: #d97706; }
+    .done { background: #16a34a; }
+    .error { background: #dc2626; }
+    .gallery { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: .6rem; }
+    .gallery img { width: 180px; height: 180px; object-fit: cover; border-radius: 6px; }
+    .hint { color: #6b7280; font-size: .85rem; }
+  </style>
+</head>
+<body>
+  <h1>Mayalin Studio — tạo ảnh</h1>
+  <form method="post" action="/submit">
+    <p class="hint">Mỗi dòng là một ảnh. Trigger word của nhân vật tự được thêm vào — bạn chỉ tả cảnh.</p>
+    <textarea name="prompts" placeholder="on a beach at sunset, smiling&#10;in a coffee shop, cinematic lighting"></textarea>
+    <div class="row">
+      <label>Seed (tùy chọn): <input type="text" name="seed" placeholder="vd 42" /></label>
+      <button type="submit">Tạo ảnh</button>
+    </div>
+    <p class="hint">⏳ Kaggle batch khởi động nguội ~20–40 phút/lượt. Gom nhiều dòng vào 1 lần để đỡ chờ.</p>
+  </form>
+
+  <h2>Jobs</h2>
+  {% for job in jobs %}
+  <div class="job">
+    <div class="row">
+      <strong>{{ job.id }}</strong>
+      <span class="status {{ job.status }}">{{ job.status }}</span>
+      <span class="hint">{{ job.message }}</span>
+    </div>
+    <div class="hint">{{ job.prompts | join(" · ") }}</div>
+    {% if job.images %}
+    <div class="gallery">
+      {% for img in job.images %}
+        <a href="/images/{{ job.id }}/{{ img }}" target="_blank"><img src="/images/{{ job.id }}/{{ img }}" /></a>
+      {% endfor %}
+    </div>
+    {% endif %}
+  </div>
+  {% else %}
+  <p class="hint">Chưa có job nào.</p>
+  {% endfor %}
+
+  <script>
+    // Auto-refresh while any job is still running.
+    const pending = {{ jobs | selectattr('status', 'in', ['queued', 'running']) | list | length }};
+    if (pending > 0) setTimeout(() => location.reload(), 15000);
+  </script>
+</body>
+</html>

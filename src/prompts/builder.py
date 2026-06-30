@@ -57,3 +57,29 @@ class PromptBuilder:
     def to_payloads(self, count: int) -> list[dict[str, Any]]:
         """Return render-ready dicts for the generation pipeline."""
         return [t.as_dict() for t in self.build_many(count)]
+
+
+def prompts_to_payloads(
+    trigger_word: str,
+    prompts: list[str],
+    negative: str = "blurry, low quality, deformed",
+) -> list[dict[str, Any]]:
+    """Turn user-supplied prompt lines into generation payloads.
+
+    The trigger word is prepended to each line to keep the character identity,
+    so the user writes only the scene they want ("on a beach at sunset").
+    """
+    payloads: list[dict[str, Any]] = []
+    for line in prompts:
+        scene = line.strip()
+        if not scene:
+            continue
+        payloads.append(
+            {
+                "character": trigger_word,
+                "scene": scene,
+                "prompt": f"{trigger_word}, {scene}",
+                "negative": negative,
+            }
+        )
+    return payloads

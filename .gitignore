@@ -31,3 +31,7 @@ outputs/logs/
 # Caches
 /cache/
 .cache/
+
+# Web app runtime data (jobs + downloaded images) and staged LoRA upload
+webapp/data/
+kaggle/lora-dataset/lora.safetensors
