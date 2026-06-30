@@ -40,6 +40,7 @@ class TrainingConfig:
     cache_text_encoder_outputs: bool
     auto_caption: bool
     caption_model: str
+    blocks_to_swap: int = 16
     flux: dict[str, Any] = field(default_factory=dict)
 
     @classmethod
@@ -71,6 +72,7 @@ class TrainingConfig:
             cache_text_encoder_outputs=bool(cfg["cache_text_encoder_outputs"]),
             auto_caption=bool(cfg["auto_caption"]),
             caption_model=str(cfg["caption_model"]),
+            blocks_to_swap=int(cfg.get("blocks_to_swap", 16)),
             flux=dict(cfg.get("flux", {})),
         )
 

@@ -7,6 +7,7 @@ command from :class:`TrainingConfig` so nothing is hardcoded.
 
 from __future__ import annotations
 
+import os
 import shutil
 import subprocess
 import sys
@@ -183,7 +184,7 @@ class KohyaRunner:
         if self.cfg.fp8_base:
             flags.append("--fp8_base")
         if self.cfg.low_vram:
-            flags += ["--blocks_to_swap", "8"]
+            flags += ["--blocks_to_swap", str(self.cfg.blocks_to_swap)]
         return flags
 
     def _resume_flags(self) -> list[str]:
@@ -202,5 +203,8 @@ class KohyaRunner:
         logger.info("Synced %d captions next to images.", synced)
         cmd = self.build_command()
         logger.info("Launching trainer: %s", " ".join(cmd))
-        proc = subprocess.run(cmd, cwd=str(self.paths.sd_scripts_dir))
+        # expandable_segments reduces CUDA fragmentation — buys back the last few
+        # hundred MB on a 16GB T4 where FLUX training runs right at the edge.
+        env = {**os.environ, "PYTORCH_CUDA_ALLOC_CONF": "expandable_segments:True"}
+        proc = subprocess.run(cmd, cwd=str(self.paths.sd_scripts_dir), env=env)
         return proc.returncode

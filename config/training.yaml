@@ -26,6 +26,8 @@ resume: true                  # auto-resume from latest checkpoint if present
 # Memory (Colab T4/A100 friendly)
 low_vram: true                # enables fp8 base + blocks-to-swap when true
 fp8_base: true
+blocks_to_swap: 16            # transformer blocks kept on CPU RAM; raise to fit
+                              # less VRAM (T4 16GB), lower for speed on big GPUs
 cache_latents: true
 cache_text_encoder_outputs: true
 
